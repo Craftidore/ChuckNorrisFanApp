@@ -22,39 +22,74 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.craftidore.chucknorris.ui.ErrorScreen
+import com.craftidore.chucknorris.ui.LoadingScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
     modifier: Modifier = Modifier,
-    viewModel: CategoriesViewModel = viewModel(),
+    viewModel: CategoriesViewModel = viewModel(
+        factory = CategoriesViewModel.Factory
+    ),
+    topBar: @Composable () -> Unit,
     bottomBar: @Composable () -> Unit,
-    onCategoryClick: () -> Unit = { }
+    onCategoryClick: (category: String) -> Unit = { s -> Unit }
 ) {
-    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
-
     Scaffold(
+        topBar = topBar,
         bottomBar = bottomBar,
         modifier = modifier.fillMaxSize(),
         content = { innerPadding ->
-        LazyColumn(modifier = Modifier.padding(innerPadding)) {
-            items(items = uiState.value.categoriesList) { item ->
-                Card(
-                    modifier = Modifier
-                        .animateItem()
-                        .height(100.dp)
-                        .fillMaxWidth()
-                        .padding(7.dp),
-                    onClick = onCategoryClick
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Text(item.name, fontSize = 35.sp)
-                    }
+            Box (modifier = Modifier.padding(innerPadding)) {
+                when (val uiState = viewModel.categoriesUiState) {
+                    is CategoriesUiState.Loading -> LoadingScreen()
+                    is CategoriesUiState.Success -> CategoryView(
+                        categories = uiState.categories,
+                        onCategoryClick = onCategoryClick
+                    )
+                    is CategoriesUiState.Error -> ErrorScreen(
+                        text = "An error occurred. Check your internet connection.",
+                        onRefresh = { viewModel.getCategories() }
+                    )
                 }
             }
         }
-    })
+    )
 }
+
+@Composable
+fun CategoryView(
+    modifier: Modifier = Modifier,
+    categories: List<String>,
+    onCategoryClick: (category: String) -> Unit
+) {
+    LazyColumn(modifier = modifier) {
+        items(items = categories) { item ->
+            Card(
+                modifier = Modifier
+                    .height(100.dp)
+                    .fillMaxWidth()
+                    .padding(7.dp),
+                onClick = { onCategoryClick(item) }
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.text/capitalize.html
+                    val capitalizedItem = item.replaceFirstChar {
+                        if (it.isLowerCase()) {
+                            it.titlecase(java.util.Locale.getDefault())
+                        }
+                        else {
+                            it.toString()
+                        }
+                    }
+                    Text(capitalizedItem, fontSize = 35.sp)
+                }
+            }
+        }
+    }
+}
+
