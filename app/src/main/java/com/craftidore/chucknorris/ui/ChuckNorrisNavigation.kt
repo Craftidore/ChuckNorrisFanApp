@@ -148,19 +148,23 @@ fun ChuckNorrisBottomBar(
     navController: NavController
 )
 {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+
     val navCategories = {
         navController.popBackStack()
         navController.navigate(Routes.Categories)
     }
     val navFavorites = {
-        navController.navigate(Routes.Favorites)
+        if (currentRoute?.endsWith(Routes.Favorites.toString()) == false) {
+            navController.navigate(Routes.Favorites)
+        }
     }
     val navSearch = {
-        navController.navigate(Routes.Search)
+        if (currentRoute?.endsWith(Routes.Search.toString()) == false) {
+            navController.navigate(Routes.Search)
+        }
     }
-
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
 
     NavigationBar {
         NavigationBarItem(
